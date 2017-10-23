@@ -5,12 +5,12 @@ Addon for Blender that imports TheEngine's (Skyfallen Entertainment) geometry.
 
 This is a very early version of an import script. The script is developed and tested with Blender 2.79.
 
-For install addon copy a `skyfallen_import` into your blender addons directory and activate it in the user preferences.
+For addon installation copy the `skyfallen_import` directory into your blender addons directory and activate it in the user preferences.
 
 Addon is licensed under the GNU GPL v.3.
 
 
-### What imports
+### What is supported
 
 1. Static (BMS) and skinned (BMA) geometry
 2. Textures and UV-maps
@@ -18,9 +18,9 @@ Addon is licensed under the GNU GPL v.3.
 4. Mesh format versions: 4.4, 4.5 (Planet Alcatraz)
 
 
-### Todo
+### TODO
 
-1. Complete skeletone import
+1. Complete skeleton import
 2. Animations import: BSA, BCA(?)
 3. Support for mesh format versions greater then 4.5
 4. Import material parameters
