@@ -2,6 +2,7 @@ import os.path
 import re
 import bpy
 import bmesh
+from bpy_extras.io_utils import axis_conversion
 from .skyfallen import SFGeometry
 
 
@@ -48,13 +49,16 @@ def load_texture(material, texname, dirname):
 
 def read(file, context, operation):
     del context
+
     amt = bpy.data.armatures.new('Skeleton')
     root_name = os.path.basename(operation.filepath)
     root = bpy.data.objects.new(root_name, amt)
+    root.matrix_world = axis_conversion(from_forward='Z', from_up='Y').to_4x4()
     bpy.context.scene.objects.link(root)
 
     sf_geom = SFGeometry(file)
 
+    # Process materials
     materials = []
     for sf_mat in sf_geom.materials:
         material = bpy.data.materials.new(sf_mat.name)
@@ -64,6 +68,7 @@ def read(file, context, operation):
             load_texture(material, texname, dirname)
         materials.append(material)
 
+    # Process Bones
     if sf_geom.bones:
         bpy.context.scene.objects.active = root
         bpy.ops.object.mode_set(mode='EDIT')
@@ -78,7 +83,6 @@ def read(file, context, operation):
                 bone.parent = amt.edit_bones[sf_bone.parent_id]
 
         bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.context.scene.objects.active = None
 
     for frag in sf_geom.fragments:
         name = sf_geom.materials[frag.mat_id].name

@@ -27,16 +27,15 @@ def read_string(file):
 
 
 def read_vector(file):
-    pos_x, pos_z, pos_y = read_struct('fff', file)
-    return(pos_x, pos_y, pos_z)
+    return read_struct('fff', file)
 
 
 def read_packed_vector(is_normal, file):
     packed = read_struct('I', file)
 
     pos_x = (packed & 0x00FF0000) >> 16
-    pos_z = (packed & 0x0000FF00) >> 8
-    pos_y = (packed & 0x000000FF)
+    pos_y = (packed & 0x0000FF00) >> 8
+    pos_z = (packed & 0x000000FF)
 
     pos_x = (pos_x / 127.5) - 1
     pos_y = (pos_y / 127.5) - 1
@@ -207,7 +206,7 @@ class SFVertex:
         # Read position
         pos_x, pos_y, pos_z = 0, 0, 0
         if vertexFormat.packed:
-            pos_x, pos_z, pos_y, scale = read_struct('4h', file)
+            pos_x, pos_y, pos_z, scale = read_struct('4h', file)
             if vertexFormat.bones:
                 pos_x = pos_x / scale
                 pos_y = pos_y / scale
@@ -217,7 +216,7 @@ class SFVertex:
                 pos_y = (pos_y - 0.5) * 2.0 / meshFormat.scale - 1.0
                 pos_z = (pos_z - 0.5) * 2.0 / meshFormat.scale - 1.0
         else:
-            pos_x, pos_z, pos_y = read_struct('fff', file)
+            pos_x, pos_y, pos_z = read_struct('fff', file)
 
         self.pos = (pos_x, pos_y, pos_z)
 
