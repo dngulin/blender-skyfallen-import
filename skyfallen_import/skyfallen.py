@@ -167,7 +167,7 @@ class SFVertexFormat:
 
 
 class SFMeshFragment:
-    def __init__(self, file, meshFormat):
+    def __init__(self, file, mesh_fmt):
         vertex_fmt_raw = read_struct('I', file)
         self.vertex_format = SFVertexFormat(vertex_fmt_raw)
 
@@ -175,12 +175,12 @@ class SFMeshFragment:
         self.facees_offset = read_struct('i', file) // 3
         self.facees_length = read_struct('i', file) // 3
 
-        if meshFormat.v_num >= v_num(4, 6):
+        if mesh_fmt.v_num >= v_num(4, 6):
             self.vertex_offset = read_struct('i', file)
         else:
             self.vertex_offset = 0
 
-        if meshFormat.skinned:
+        if mesh_fmt.skinned:
             self.vertex_bones = read_struct('i', file)
             self.bone_remap = read_struct('16B', file)
         else:
@@ -202,19 +202,19 @@ class SFMeshFragment:
 # Vertices
 # ------------------------------------------------------------------------------
 class SFVertex:
-    def __init__(self, file, vertexFormat, meshFormat):
+    def __init__(self, file, vertex_fmt, mesh_fmt):
         # Read position
         pos_x, pos_y, pos_z = 0, 0, 0
-        if vertexFormat.packed:
+        if vertex_fmt.packed:
             pos_x, pos_y, pos_z, scale = read_struct('4h', file)
-            if vertexFormat.bones:
+            if vertex_fmt.bones:
                 pos_x = pos_x / scale
                 pos_y = pos_y / scale
                 pos_z = pos_z / scale
             else:
-                pos_x = (pos_x - 0.5) * 2.0 / meshFormat.scale - 1.0
-                pos_y = (pos_y - 0.5) * 2.0 / meshFormat.scale - 1.0
-                pos_z = (pos_z - 0.5) * 2.0 / meshFormat.scale - 1.0
+                pos_x = (pos_x - 0.5) * 2.0 / mesh_fmt.scale - 1.0
+                pos_y = (pos_y - 0.5) * 2.0 / mesh_fmt.scale - 1.0
+                pos_z = (pos_z - 0.5) * 2.0 / mesh_fmt.scale - 1.0
         else:
             pos_x, pos_y, pos_z = read_struct('fff', file)
 
@@ -224,7 +224,7 @@ class SFVertex:
         self.normal = read_packed_vector(True, file)
 
         # Binormal and tangent vectors
-        if vertexFormat.bump:
+        if vertex_fmt.bump:
             self.bump_s = read_packed_vector(False, file)
             self.bump_t = read_packed_vector(False, file)
 
@@ -232,11 +232,11 @@ class SFVertex:
         tex_u = read_struct('h', file) / 2048.0
         tex_v = 1.0 - (read_struct('h', file) / 2048.0)
         self.tex_uv = (tex_u, tex_v)
-        if vertexFormat.uv2:
+        if vertex_fmt.uv2:
             read_struct('i', file)
 
         # Bones
-        if vertexFormat.bones:
+        if vertex_fmt.bones:
             self.bones = read_struct('4B', file)
             weights = read_struct('4B', file)
             self.weights = (
@@ -246,7 +246,7 @@ class SFVertex:
                 weights[3] / 255
             )
 
-        if vertexFormat.color:
+        if vertex_fmt.color:
             read_struct('I', file)
 
     def __str__(self):
