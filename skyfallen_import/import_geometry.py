@@ -12,15 +12,20 @@ def get_texture_name(path, mat_texname):
 
     if mat_texname[-4:] == '.dds':
         texnames.append(mat_texname[:-4] + '_hi.dds')
+        texnames.append(mat_texname[:-4] + '.dds')
 
     basename = os.path.basename(path)[:-4]
-    texnames.append(basename + '.dds')
     texnames.append(basename + '_hi.dds')
+    texnames.append(basename + '.dds')
+
+    if basename[-6:] == '_model':
+        texnames.append(basename[:-6] + '_tex_hi.dds')
+        texnames.append(basename[:-6] + '_tex.dds')
 
     cmntexname = re.sub(r'_\d+$', '', basename)
     if cmntexname != basename:
-        texnames.append(cmntexname + '.dds')
         texnames.append(cmntexname + '_hi.dds')
+        texnames.append(cmntexname + '.dds')
 
     # Validate list
     dirname = os.path.dirname(path)
