@@ -245,6 +245,9 @@ class SFVertex:
                 weights[2] / 255,
                 weights[3] / 255
             )
+        else:
+            self.bones = ()
+            self.weights = ()
 
         if vertex_fmt.color:
             read_struct('I', file)
@@ -276,7 +279,9 @@ class SFMeshFace:
 # SkyFallen 3D Geometry
 # ------------------------------------------------------------------------------
 class SFBone:
-    def __init__(self, file):
+    def __init__(self, bone_id,  file):
+        self.id = bone_id
+
         self.name = read_string(file)
         self.parent_id = read_struct('i', file)
 
@@ -320,10 +325,9 @@ class SFGeometry:
         self.bones = []
         if self.mesh_format.skinned:
             bone_count = read_header(0x00001441, 'Skeleton2', file)
-            for _ in range(bone_count):
-                bone = SFBone(file)
+            for bone_id in range(bone_count):
+                bone = SFBone(bone_id, file)
                 self.bones.append(bone)
-                print(bone)
 
         # Materials
         material_count = read_header(0x0005535B, 'MeshMaterials', file)
@@ -342,7 +346,6 @@ class SFGeometry:
         for _ in range(frg_count):
             fragment = SFMeshFragment(file, self.mesh_format)
             self.fragments.append(fragment)
-            print(fragment)
 
         # Vertices
         self.vertex_format = self.fragments[0].vertex_format

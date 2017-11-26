@@ -52,6 +52,27 @@ def load_texture(material, texname, dirname):
     mtex.texture_coords = 'UV'
 
 
+def find_bone_tail(sf_bones, bone_id):
+    bone = sf_bones[bone_id]
+
+    # Try to set tail by child head
+    for sf_bone in sf_bones:
+        if sf_bone.parent_id == bone_id:
+            print('Warning: Fixed zero-length bone \'{}\' (by child)'.format(bone.name))
+            return sf_bone.pos_start
+
+    # Fallback: copy parent bone lenght
+    parent = sf_bones[bone.parent_id]
+    delta_x = parent.pos_end[0] - parent.pos_start[0]
+    delta_y = parent.pos_end[1] - parent.pos_start[1]
+    delta_z = parent.pos_end[2] - parent.pos_start[2]
+
+    pos = bone.pos_start
+    print('Warning: Fixed zero-length bone \'{}\' (by parent)'.format(bone.name))
+    return (pos[0] + delta_x, pos[1] + delta_y, pos[2] + delta_z)
+
+
+
 def read(file, context, operation):
     del context
 
@@ -81,11 +102,14 @@ def read(file, context, operation):
         for sf_bone in sf_geom.bones:
             bone = amt.edit_bones.new(sf_bone.name)
             bone.head = sf_bone.pos_start
-            bone.head_radius = sf_bone.bs_range
             bone.tail = sf_bone.pos_end
+            bone.use_deform = True
 
             if sf_bone.parent_id >= 0:
                 bone.parent = amt.edit_bones[sf_bone.parent_id]
+
+            if sf_bone.bs_range <= 0.01:
+                bone.tail = find_bone_tail(sf_geom.bones, sf_bone.id)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -116,6 +140,7 @@ def read(file, context, operation):
             vertex.co = sf_vertex.pos
             vertex.normal = sf_vertex.normal
             tex_coords.append(sf_vertex.tex_uv)
+
         b_mesh.verts.ensure_lookup_table()
         b_mesh.verts.index_update()
 
@@ -139,3 +164,30 @@ def read(file, context, operation):
 
         b_mesh.to_mesh(mesh)
         b_mesh.free()
+
+        # Vertices weights and armature modifier
+        if not sf_geom.bones:
+            continue
+
+        for vertex_id in range(len(indices)):
+            index = indices[vertex_id]
+            sf_vertex = sf_geom.vertices[index]
+
+            for i in range(frag.vertex_bones):
+                local_bone_id = sf_vertex.bones[i]
+                weight = sf_vertex.weights[i]
+                if local_bone_id >= 254 or weight <= 0:
+                    continue
+
+                bone_id = frag.bone_remap[local_bone_id]
+                bone_name = sf_geom.bones[bone_id].name
+
+                group = obj.vertex_groups.get(bone_name)
+                if not group:
+                    group = obj.vertex_groups.new(bone_name)
+
+                group.add([vertex_id], weight, 'REPLACE')
+
+        modifier = obj.modifiers.new(type="ARMATURE", name="Armature")
+        modifier.object = root
+        modifier.use_bone_envelopes = False
