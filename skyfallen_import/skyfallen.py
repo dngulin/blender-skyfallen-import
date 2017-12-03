@@ -9,10 +9,19 @@ def read_struct(fmt, file):
     return result
 
 
-def read_header(header_label, header_name, file):
+def calc_label(string):
+    result = 0
+    for index, char in enumerate(string.lower()):
+        byte = ord(char) << index
+        result = result ^ byte
+    return result
+
+
+def read_header(header, file):
+    header_label = calc_label(header)
     label, count = read_struct('II', file)
     if label != header_label:
-        raise Exception('Missing header: {}'.format(header_name))
+        raise Exception('Missing header: {}'.format(header))
     return count
 
 
@@ -95,10 +104,7 @@ class SFMeshFormat:
     def __init__(self, file, version_number):
         self.v_num = version_number
 
-        label, flags = read_struct('II', file)
-        if label != 0x0000a34b:
-            # Hash of 'MeshHeader'
-            raise Exception('Missing Mesh Header')
+        flags = read_header('MeshHeader', file)
 
         self.skinned = bool(flags & (1 << 0))
         self.tiled = bool(flags & (1 << 1))
@@ -324,13 +330,13 @@ class SFGeometry:
         # Bones
         self.bones = []
         if self.mesh_format.skinned:
-            bone_count = read_header(0x00001441, 'Skeleton2', file)
+            bone_count = read_header('Skeleton2', file)
             for bone_id in range(bone_count):
                 bone = SFBone(bone_id, file)
                 self.bones.append(bone)
 
         # Materials
-        material_count = read_header(0x0005535B, 'MeshMaterials', file)
+        material_count = read_header('MeshMaterials', file)
         self.materials = []
         for _ in range(material_count):
             self.materials.append(SFMaterial(file))
@@ -339,9 +345,9 @@ class SFGeometry:
         self.fragments = []
         frg_count = 0
         if self.mesh_format.skinned:
-            frg_count = read_header(0x02238ECB, 'MeshFragmentsSkinned', file)
+            frg_count = read_header('MeshFragmentsSkinned', file)
         else:
-            frg_count = read_header(0x010C4ECB, 'MeshFragmentsStatic', file)
+            frg_count = read_header('MeshFragmentsStatic', file)
 
         for _ in range(frg_count):
             fragment = SFMeshFragment(file, self.mesh_format)
@@ -352,16 +358,16 @@ class SFGeometry:
         self.vertices = []
         vtx_count = 0
         if self.mesh_format.skinned:
-            vtx_count = read_header(0x01119C6B, 'MeshVerticesSkinned', file)
+            vtx_count = read_header('MeshVerticesSkinned', file)
         else:
-            vtx_count = read_header(0x00867C6B, 'MeshVerticesStatic', file)
+            vtx_count = read_header('MeshVerticesStatic', file)
 
         for _ in range(vtx_count):
             vertex = SFVertex(file, self.vertex_format, self.mesh_format)
             self.vertices.append(vertex)
 
         # Faces
-        index_count = read_header(0x000141FB, 'MeshIndices', file)
+        index_count = read_header('MeshIndices', file)
         self.faces = []
         for _ in range(index_count // 3):
             face = SFMeshFace(file)
