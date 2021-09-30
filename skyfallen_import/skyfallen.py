@@ -55,7 +55,7 @@ def read_packed_vector(is_normal, file):
         if mirror:
             pos_x, pos_y, pos_z = -pos_x, -pos_y, -pos_z
 
-    return (pos_x, pos_y, pos_z)
+    return pos_x, pos_y, pos_z
 
 
 def read_matrix4(file):
@@ -156,11 +156,11 @@ class SFMaterial:
 # ------------------------------------------------------------------------------
 class SFVertexFormat:
     def __init__(self, flags):
-        self.packed = bool(flags & (1 << 0)) # Has position packing
+        self.packed = bool(flags & (1 << 0))  # Has position packing
         self.bones = bool(flags & (1 << 1))  # Has bone indices
-        self.bump = bool(flags & (1 << 2))   # Has binormal and tangent vectors
+        self.bump = bool(flags & (1 << 2))  # Has binormal and tangent vectors
         self.color = bool(flags & (1 << 3))  # Has vertex colors
-        self.uv2 = bool(flags & (1 << 4))    # Has second set of UV coordinates
+        self.uv2 = bool(flags & (1 << 4))  # Has second set of UV coordinates
 
     def __str__(self):
         string = 'SFVertexFormat:\n'
@@ -178,8 +178,8 @@ class SFMeshFragment:
         self.vertex_format = SFVertexFormat(vertex_fmt_raw)
 
         self.mat_id = read_struct('i', file)
-        self.facees_offset = read_struct('i', file) // 3
-        self.facees_length = read_struct('i', file) // 3
+        self.faces_offset = read_struct('i', file) // 3
+        self.faces_length = read_struct('i', file) // 3
 
         if mesh_fmt.v_num >= v_num(4, 6):
             self.vertex_offset = read_struct('i', file)
@@ -196,8 +196,8 @@ class SFMeshFragment:
     def __str__(self):
         string = 'MeshFragment:\n'
         string += '\tMaterial ID      = {}\n'.format(self.mat_id)
-        string += '\tFaces offset     = {}\n'.format(self.facees_offset)
-        string += '\tFaces length     = {}\n'.format(self.facees_length)
+        string += '\tFaces offset     = {}\n'.format(self.faces_offset)
+        string += '\tFaces length     = {}\n'.format(self.faces_length)
         string += '\tVertex offset    = {}\n'.format(self.vertex_offset)
         string += '\tBones per vertex = {}\n'.format(self.vertex_bones)
         string += '\tBone remap: {}'.format(self.bone_remap)
@@ -210,7 +210,6 @@ class SFMeshFragment:
 class SFVertex:
     def __init__(self, file, vertex_fmt, mesh_fmt):
         # Read position
-        pos_x, pos_y, pos_z = 0, 0, 0
         if vertex_fmt.packed:
             pos_x, pos_y, pos_z, scale = read_struct('4h', file)
             if vertex_fmt.bones:
@@ -274,7 +273,7 @@ class SFMeshFace:
         vertex_id1 = id_map.index(self.ids[0])
         vertex_id2 = id_map.index(self.ids[1])
         vertex_id3 = id_map.index(self.ids[2])
-        return (vertex_id1, vertex_id2, vertex_id3)
+        return vertex_id1, vertex_id2, vertex_id3
 
     def __str__(self):
         string = 'MeshFace: {}'
@@ -285,7 +284,7 @@ class SFMeshFace:
 # SkyFallen 3D Geometry
 # ------------------------------------------------------------------------------
 class SFBone:
-    def __init__(self, bone_id,  file):
+    def __init__(self, bone_id, file):
         self.id = bone_id
 
         self.name = read_string(file)
@@ -313,7 +312,6 @@ class SFBone:
         string += '\tBounding Sphere range: {}\n'.format(self.bs_range)
         string += '\tCollisions: {}\n'.format(self.collision)
         return string
-
 
 
 # ------------------------------------------------------------------------------
@@ -356,7 +354,6 @@ class SFGeometry:
         # Vertices
         self.vertex_format = self.fragments[0].vertex_format
         self.vertices = []
-        vtx_count = 0
         if self.mesh_format.skinned:
             vtx_count = read_header('MeshVerticesSkinned', file)
         else:
@@ -376,7 +373,7 @@ class SFGeometry:
     def get_indices(self, offset, length):
         uniq = []
         for i in range(offset, offset + length):
-            for indice in self.faces[i].ids:
-                if indice not in uniq:
-                    uniq.append(indice)
+            for index in self.faces[i].ids:
+                if index not in uniq:
+                    uniq.append(index)
         return uniq

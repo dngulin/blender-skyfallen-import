@@ -7,8 +7,7 @@ from .skyfallen import SFGeometry
 
 
 def get_texture_name(path, mat_texname):
-    texnames = []
-    texnames.append(mat_texname)
+    texnames = [mat_texname]
 
     if mat_texname[-4:] == '.dds':
         texnames.append(mat_texname[:-4] + '_hi.dds')
@@ -69,18 +68,15 @@ def find_bone_tail(sf_bones, bone_id):
 
     pos = bone.pos_start
     print('Warning: Fixed zero-length bone \'{}\' (by parent)'.format(bone.name))
-    return (pos[0] + delta_x, pos[1] + delta_y, pos[2] + delta_z)
+    return pos[0] + delta_x, pos[1] + delta_y, pos[2] + delta_z
 
 
-
-def read(file, context, operation):
-    del context
-
+def read(file, operation):
     amt = bpy.data.armatures.new('Skeleton')
     root_name = os.path.basename(operation.filepath)
     root = bpy.data.objects.new(root_name, amt)
     root.matrix_world = axis_conversion(from_forward='Z', from_up='Y').to_4x4()
-    bpy.context.scene.objects.link(root)
+    bpy.context.collection.objects.link(root)
 
     sf_geom = SFGeometry(file)
 
@@ -96,7 +92,7 @@ def read(file, context, operation):
 
     # Process Bones
     if sf_geom.bones:
-        bpy.context.scene.objects.active = root
+        bpy.context.view_layer.objects.active = root
         bpy.ops.object.mode_set(mode='EDIT')
 
         for sf_bone in sf_geom.bones:
@@ -118,15 +114,15 @@ def read(file, context, operation):
         mesh = bpy.data.meshes.new(name)
         obj = bpy.data.objects.new(name, mesh)
         obj.parent = root
-        bpy.context.scene.objects.link(obj)
+        bpy.context.collection.objects.link(obj)
 
         # Push material
         material = materials[frag.mat_id]
         obj.data.materials.append(material)
 
         # Push vertices and faces to mesh
-        offset = frag.facees_offset
-        length = frag.facees_length
+        offset = frag.faces_offset
+        length = frag.faces_length
         indices = sf_geom.get_indices(offset, length)
 
         b_mesh = bmesh.new()
@@ -145,7 +141,7 @@ def read(file, context, operation):
         b_mesh.verts.index_update()
 
         # Faces
-        for i in range(offset, offset+length):
+        for i in range(offset, offset + length):
             ids = sf_geom.faces[i].get_mapped_indices(indices)
             idx_1 = b_mesh.verts[ids[0]]
             idx_2 = b_mesh.verts[ids[1]]
@@ -184,7 +180,7 @@ def read(file, context, operation):
 
                 group = obj.vertex_groups.get(bone_name)
                 if not group:
-                    group = obj.vertex_groups.new(bone_name)
+                    group = obj.vertex_groups.new(name=bone_name)
 
                 group.add([vertex_id], weight, 'REPLACE')
 
